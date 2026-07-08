@@ -1,0 +1,9 @@
+streamlit>=1.38
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.4
+plotly>=5.22
+spacy>=3.8
+
+# After installing requirements, download the spaCy English model:
+#   python -m spacy download en_core_web_sm

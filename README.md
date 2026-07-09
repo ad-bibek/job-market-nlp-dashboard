@@ -20,6 +20,15 @@ a feature before (and after) it ships:
 | US-05 | Filterable summary dashboard | `app.py` (Overview tab) |
 | US-06 | Data quality validation & logging | `src/validation.py` |
 
+## Visual design
+
+Styled as a "market terminal" — since this is literally job *market* intelligence,
+the UI leans into that: dark ink background, an amber ticker strip surfacing live
+stats under the title, monospace (IBM Plex Mono) for all data/metrics so figures
+read like a trading-board readout, Space Grotesk for headings, Inter for body text.
+Theme lives in `src/theme.py` (CSS) and `.streamlit/config.toml` (base Streamlit
+theme tokens) — change the hex values in `src/theme.py`'s `:root` block to retheme.
+
 ## Setup
 
 ```bash
@@ -37,6 +46,8 @@ Then open the URL Streamlit prints (typically http://localhost:8501).
 job_market_dashboard/
 ├── app.py                  # Streamlit UI — six tabs, one per user story
 ├── requirements.txt
+├── .streamlit/
+│   └── config.toml          # base theme tokens (dark, amber accent)
 ├── data/
 │   ├── generate_data.py     # synthetic dataset generator (deterministic, seeded)
 │   └── postings.csv         # 400 generated postings, ~6% intentionally malformed
@@ -44,7 +55,8 @@ job_market_dashboard/
     ├── validation.py        # FS-4: required-field validation & exclusion log
     ├── skills.py             # FS-1: spaCy PhraseMatcher skill extraction
     ├── topics.py              # FS-2: TF-IDF + KMeans topic clustering, c-TF-IDF labeling
-    └── similarity.py          # FS-3: TF-IDF + SVD embeddings, cosine similarity search
+    ├── similarity.py          # FS-3: TF-IDF + SVD embeddings, cosine similarity search
+    └── theme.py                # market-terminal CSS + ticker-strip component
 ```
 
 ## On the dataset

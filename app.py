@@ -14,10 +14,28 @@ from validation import validate
 from skills import extract_skills, skill_frequency_by_category, top_skills_for_category
 from topics import fit_topics
 from similarity import SimilarityIndex
+from theme import CSS, ticker_html
 
-st.set_page_config(page_title="Job Market Intelligence Dashboard", layout="wide")
+st.set_page_config(page_title="Job Market Intelligence Dashboard", layout="wide", page_icon="📡")
+st.markdown(CSS, unsafe_allow_html=True)
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "data", "postings.csv")
+
+PLOTLY_LAYOUT = dict(
+    paper_bgcolor="#121B2E", plot_bgcolor="#121B2E",
+    font=dict(family="Inter, sans-serif", color="#EDEFF3", size=13),
+    title_font=dict(family="Space Grotesk, sans-serif", size=16, color="#EDEFF3"),
+    legend=dict(bgcolor="rgba(0,0,0,0)"),
+    margin=dict(t=50, l=10, r=10, b=10),
+)
+COLOR_SEQUENCE = ["#E8A33D", "#4FD1A5", "#7C93C9", "#D97757", "#8A93A6", "#B5CDA3"]
+
+
+def style_fig(fig):
+    fig.update_layout(**PLOTLY_LAYOUT)
+    fig.update_xaxes(gridcolor="#223049", zerolinecolor="#223049")
+    fig.update_yaxes(gridcolor="#223049", zerolinecolor="#223049")
+    return fig
 
 
 @st.cache_data
@@ -51,8 +69,22 @@ def build_similarity_index(clean_df_with_skills):
 raw_df, clean_df, validation_log = load_data()
 clean_df, freq_df = compute_skills(clean_df)
 
-st.title("📊 Job Market Intelligence Dashboard")
-st.caption("Global DS/AI job postings — skill demand, topic clusters, and similarity search")
+st.markdown('<div class="market-eyebrow">Real-Time Signal &middot; Global DS/AI Roles</div>', unsafe_allow_html=True)
+st.markdown(
+    '<div class="market-title"><span class="dot"></span>'
+    '<h1 style="margin:0;">Job Market Intelligence</h1></div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    ticker_html([
+        ("POSTINGS", len(clean_df)),
+        ("CATEGORIES", clean_df["category"].nunique()),
+        ("COMPANIES", clean_df["company"].nunique()),
+        ("FLAGGED", len(validation_log)),
+        ("TOP SKILL", freq_df.groupby("skill")["count"].sum().idxmax() if len(freq_df) else "—"),
+    ]),
+    unsafe_allow_html=True,
+)
 
 # ---------- Sidebar filters (US-05) ----------
 st.sidebar.header("Filters")
@@ -94,19 +126,22 @@ with tab_overview:
     with c1:
         cat_counts = filtered["category"].value_counts().reset_index()
         cat_counts.columns = ["category", "postings"]
-        fig = px.bar(cat_counts, x="category", y="postings", title="Postings by Role Category")
-        st.plotly_chart(fig, use_container_width=True)
+        fig = px.bar(cat_counts, x="category", y="postings", title="Postings by Role Category",
+                     color_discrete_sequence=[COLOR_SEQUENCE[0]])
+        st.plotly_chart(style_fig(fig), use_container_width=True)
     with c2:
         loc_counts = filtered["location"].value_counts().reset_index()
         loc_counts.columns = ["location", "postings"]
-        fig = px.pie(loc_counts, names="location", values="postings", title="Postings by Location")
-        st.plotly_chart(fig, use_container_width=True)
+        fig = px.pie(loc_counts, names="location", values="postings", title="Postings by Location",
+                     color_discrete_sequence=COLOR_SEQUENCE, hole=0.45)
+        st.plotly_chart(style_fig(fig), use_container_width=True)
 
     trend = filtered.copy()
     trend["posted_date"] = pd.to_datetime(trend["posted_date"])
     trend_counts = trend.groupby([pd.Grouper(key="posted_date", freq="W"), "category"]).size().reset_index(name="postings")
-    fig = px.line(trend_counts, x="posted_date", y="postings", color="category", title="Posting Volume Over Time")
-    st.plotly_chart(fig, use_container_width=True)
+    fig = px.line(trend_counts, x="posted_date", y="postings", color="category", title="Posting Volume Over Time",
+                  color_discrete_sequence=COLOR_SEQUENCE)
+    st.plotly_chart(style_fig(fig), use_container_width=True)
 
 # ---------- Skill Demand (US-02) ----------
 with tab_skills:
@@ -117,8 +152,9 @@ with tab_skills:
     top_skills = top_skills_for_category(freq_df, sel_cat, top_n)
     if len(top_skills):
         fig = px.bar(top_skills.sort_values("count"), x="count", y="skill", orientation="h",
-                     title=f"Top {top_n} skills — {sel_cat}")
-        st.plotly_chart(fig, use_container_width=True)
+                     title=f"Top {top_n} skills — {sel_cat}",
+                     color_discrete_sequence=[COLOR_SEQUENCE[1]])
+        st.plotly_chart(style_fig(fig), use_container_width=True)
     else:
         st.info("No skill data for this category yet.")
 
@@ -138,8 +174,9 @@ with tab_topics:
     counts.columns = ["topic_id", "postings"]
     merged = label_df.merge(counts, on="topic_id").sort_values("postings", ascending=False)
 
-    fig = px.bar(merged, x="postings", y="label", orientation="h", title="Topic Clusters by Size")
-    st.plotly_chart(fig, use_container_width=True)
+    fig = px.bar(merged, x="postings", y="label", orientation="h", title="Topic Clusters by Size",
+                 color_discrete_sequence=[COLOR_SEQUENCE[2]])
+    st.plotly_chart(style_fig(fig), use_container_width=True)
 
     sel_topic_label = st.selectbox("Inspect a cluster", merged["label"])
     sel_topic_id = merged.loc[merged["label"] == sel_topic_label, "topic_id"].iloc[0]

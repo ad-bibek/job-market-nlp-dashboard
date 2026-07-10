@@ -82,7 +82,7 @@ Both modules are isolated enough that swapping in real `bertopic` +
 `sentence-transformers` later only touches `fit_topics()` and
 `SimilarityIndex.__init__()` — nothing else in the app changes.
 
-## Known limitations (be ready to discuss these)
+## Known limitations
 
 - Synthetic data means skill/topic patterns are somewhat cleaner than
   real-world messy postings — worth mentioning if asked in an interview.
